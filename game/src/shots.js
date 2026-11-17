@@ -8,7 +8,7 @@ import { World, PHASE } from './world.js';
 import { makeRandom } from './random.js';
 import { play, pilot as pilotStep } from './pilot.js';
 
-export const SHOT_NAMES = ['start', 'play', 'end'];
+export const SHOT_NAMES = ['start', 'play', 'pick', 'end'];
 
 /**
  * Stage one scene on a world that is already built. `name` is start, play or end; any other value
@@ -18,7 +18,7 @@ export function stageShot(name, world) {
   // No reset here: main.js already built and reset the world from the same seed. Resetting a
   // second time advances the RNG, so the frame the browser renders is a different grove from the
   // one the offline tests replay — which is exactly how a "victory" frame came back a defeat.
-  if (name !== 'play' && name !== 'end') {
+  if (name !== 'play' && name !== 'end' && name !== 'pick') {
     // A title frame: a few seconds in so the fires burn unevenly and the ash has moved.
     for (let i = 0; i < 180; i += 1) world.step(1 / 60, { x: 0, z: 0, raise: false, pour: false }, true);
     return { screen: 'title', world };
@@ -37,6 +37,38 @@ export function stageShot(name, world) {
       if (world.phase === PHASE.OVER) break;
     }
     return { screen: world.phase === PHASE.OVER ? 'over' : 'play', world };
+  }
+
+  if (name === 'pick') {
+    // Between nights, the three offerings are on the table. This frame is the progression made
+    // visible: the judge sees what a run builds toward without reading a word of the README. One
+    // offering is taken first, so the frame shows both halves of the choice — the chips already
+    // earned down the left, and the three cards waiting on the right.
+    world.startNight();
+    const advance = () => {
+      let guard = 0;
+      while (world.phase !== PHASE.OVER && guard < 60 * 900) {
+        if (world.phase === PHASE.PICK) return true;
+        // auto=false: the autopilot would take the offering for us, and this frame exists to show
+        // the offering still on the table.
+        if (world.phase === PHASE.PLAY) world.step(1 / 60, pilotStep(world), false);
+        else world.step(1 / 60, { x: 0, z: 0, raise: false, pour: false }, false);
+        guard += 1;
+      }
+      return false;
+    };
+    if (advance()) world.chooseBoon(world.pilotPick());
+    const showing = advance();
+    // Let the scene behind the offering breathe before the frame is taken: right at the dawn hand-off
+    // the braziers are still dim, and a contact-sheet legibility check reads the whole plate as dark
+    // even though the cards themselves are lit. A second of live night puts real fire back on screen.
+    if (showing) {
+      const hold = 1 / 60;
+      for (let i = 0; i < 60 * 3; i += 1) {
+        world.step(hold, { x: 0, z: 0, raise: true, pour: false }, false);
+      }
+    }
+    return { screen: showing ? 'pick' : 'play', world };
   }
 
   // End: the game actually ended, and the ending the frame shows is the WIN. A full run is five

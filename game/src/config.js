@@ -52,8 +52,53 @@ export const NIGHTS = [
   { length: 62, wisp: 14, stalker: 2, bearer: 0, gap: 1.7 },
   { length: 72, wisp: 18, stalker: 5, bearer: 0, gap: 1.45 },
   { length: 82, wisp: 20, stalker: 7, bearer: 2, gap: 1.25 },
-  { length: 92, wisp: 18, stalker: 7, bearer: 3, gap: 1.2 },
-  { length: 102, wisp: 20, stalker: 8, bearer: 4, gap: 1.05 },
+  { length: 92, wisp: 22, stalker: 9, bearer: 3, gap: 1.0 },
+  { length: 102, wisp: 26, stalker: 11, bearer: 5, gap: 0.92 },
+];
+
+/* --- the five-night arc, then the deep grove -------------------------------------------------
+   Clearing the fifth night is an ending, not the end: the same rules keep escalating on a repeat
+   curve so a run has a shape beyond the fixed campaign — the first time the player can lose to a
+   night they have never seen. Each repeat draws from one of three moods, so the deep grove is
+   varied without a single new rule to learn. */
+export const ENDLESS = {
+  nightLength: 112,     // at night six and after, a night runs this long
+  growth: 0.16,         // extra shades per repeat, compounding
+  gapFloor: 0.72,       // the spawn gap never drops below this
+  gapDecay: 0.94,       // spawn gap multiplier per repeat
+};
+
+/* --- two presses that were asked for: hold the grove still, and silence it --- */
+export const PAUSE_KEY = 'KeyP';
+export const MUTE_KEY = 'KeyM';
+
+/* --- the offerings: one choice is made between nights, and it is the whole progression --------
+   Three themes, each a small set of named boons. A theme is always represented on the table, so
+   every choice is between three different kinds of power; the specific boon within a theme is
+   drawn fresh, which means a long run can double down on one axis. Effects are plain numbers read
+   by world.js, so a boon is data plus one line in chooseBoon and nothing else. */
+export const BOONS = [
+  // --- the wick: how long the keeper can stand in the dark
+  { theme: 'Wick', items: [
+    { id: 'deep-well',    name: 'Deep Well',      text: '+25 wick capacity, and the wick mends a little faster.' },
+    { id: 'quick-mend',   name: 'Quick Mend',     text: 'The wick recovers far faster with the lantern lowered.' },
+    { id: 'steady-hand',  name: 'Steady Hand',    text: 'The lantern wastes less wick while it is raised.' },
+    { id: 'long-carry',   name: 'Long Carry',     text: 'A raised lantern keeps far more of a fire’s light.' },
+  ] },
+  // --- the fire: how much the ring survives on its own
+  { theme: 'Fire', items: [
+    { id: 'banked-coals', name: 'Banked Coals',   text: 'Every fire drains a third slower all night.' },
+    { id: 'wide-light',   name: 'Wide Light',     text: 'A lit fire throws its light noticeably further.' },
+    { id: 'thick-wood',   name: 'Thick Wood',     text: 'A shade bite takes less fuel from a fire.' },
+    { id: 'first-light',  name: 'First Light',    text: 'Every night opens with the ring already banked.' },
+  ] },
+  // --- the ember: how hard the keeper hits back
+  { theme: 'Ember', items: [
+    { id: 'hot-blade',    name: 'Hot Blade',      text: 'The raised lantern burns shades much harder.' },
+    { id: 'wide-reach',   name: 'Wide Reach',     text: 'The raised lantern reaches further into the dark.' },
+    { id: 'big-blast',    name: 'Big Blast',      text: 'Hurled embers strike harder and cost less wick.' },
+    { id: 'long-lure',    name: 'Long Lure',      text: 'A raised lantern pulls shades from further off.' },
+  ] },
 ];
 
 export const SCORE = {

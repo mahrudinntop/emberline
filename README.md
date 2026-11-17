@@ -32,14 +32,25 @@ Play in a browser: open `game/index.html`. No build step, no network request, no
   eventually starves. The tension is exactly that.
 - **Five nights.** Each night a longer wave of wisp, stalker and bearer. Score is shades banished,
   fires kept, night reached, and wick left when it ended.
+- **Between the nights, an offering.** Every dawn lays three boons on the table — a pick of the
+  Ember, Wick and Fire themes. Ember boons sharpen the lantern (reach, burn, blast), Wick boons
+  thicken the budget (capacity, mend, banked coals), Fire boons widen the light the fires throw.
+  A run is twelve boons deep at most; the build chips down the left of the HUD read back what you
+  chose. Holding a full table to the fifth dawn is a legitimate way to lose: the shades do not wait.
+- **The deep grove.** After the fifth dawn the run does not end unless you want it to: `E` walks past
+  the fifth night into an endless grove where every night is the hardest night. The score keeps
+  counting; the fires do not care that you won.
+- **Pause, sound, and a memory.** `P` holds the night exactly where it is (the world stops stepping;
+  the banner says so). `M` mutes. Best score and runs played persist in `localStorage` — the title
+  and victory screens read them back, so a session is a ladder of runs, not one night.
 
 ## What is in this repository
 
 ```
 game/                 the whole game: index.html + ES modules, vendored three.js, no bundler
   src/palette.js      every colour in the game, in one place: value bands, no pure black or white
-  src/config.js       tuning constants: rates, radii, view, night length, scoring
-  src/world.js        the simulation: fires, fuel, shades, wick, scoring, phases. No rendering.
+  src/config.js       tuning constants: rates, radii, view, night length, scoring, boons, endless
+  src/world.js        the simulation: fires, fuel, shades, wick, boons, scoring, phases. No rendering.
   src/grove.js        the diorama: terrain, pines, braziers, the shared additive lightmap, the keeper
   src/input.js        hold-to-raise and click-to-hurl, with a hold threshold so they never collide
   src/hud.js          the DOM HUD: fire pips, wick, night, score
@@ -49,7 +60,7 @@ game/                 the whole game: index.html + ES modules, vendored three.js
   src/main.js         boot, renderer, fixed-step loop
 tools/shot.py         headless-Chromium screenshot runner (Playwright)
 tools/look.py         art-direction pass: sends frames to a vision model for cr
-screenshots/          the three frames the judge sees, generated from the real build
+screenshots/          the four frames the judge sees, generated from the real build
 main.ts, vendor/      the make.fun program entrypoint and its vendored library
 ```
 
@@ -83,8 +94,8 @@ painted on afterwards; the phase machine reaches `over` with `won === true` unde
 **The PILOT is the regression test.** `tools/sweep.mjs 32` replays the real rules headlessly under
 the autopilot and counts wins. It is what proved the game was unwinnable before the tuning pass: a
 night-one budget of 233 wick of ambient fire burn plus up to 218 wick of shade bites against a
-maximum income of 304 wick is a deficit no player can close. The same harness now reports 24/32
-wins, and `tools/budget.mjs` derives that arithmetic straight from `config.js` so it can never drift
+maximum income of 304 wick is a deficit no player can close. The same harness now reports 30/32
+wins on the retuned economy (two losses at the fifth night, kept on purpose so the finale has teeth), and `tools/budget.mjs` derives that arithmetic straight from `config.js` so it can never drift
 out of step with the tuning.
 
 ## Running it
@@ -103,6 +114,10 @@ Screenshots: `tools/shot.py '<url>?shot=play&seed=29' out.png` with a headless C
 | W A S D / arrows | move the keeper |
 | hold left mouse | raise the lantern (holds a nearby fire) |
 | click | hurl an ember at the nearest dark fire |
+| 1 / 2 / 3, or click a card | take a boon at dawn |
+| E | walk into the deep grove (endless) from the victory screen |
+| P | pause |
+| M | mute |
 | R / Enter | restart |
 
 MIT licensed.

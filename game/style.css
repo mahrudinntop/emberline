@@ -78,6 +78,116 @@ html, body {
 #panel-fires { justify-self: start; min-width: 190px; }
 #panel-wick { justify-self: center; width: min(340px, 40vw); }
 #panel-clock { justify-self: end; text-align: right; }
+#panel-build { grid-column: 1 / 2; justify-self: start; margin-top: 10px; min-width: 190px; }
+#panel-toggles { grid-column: 3 / 4; justify-self: end; margin-top: 10px; text-align: right; }
+
+/* --- the run's build: one chip per boon taken, so a choice leaves a visible mark --- */
+#build-boons { display: flex; flex-wrap: wrap; gap: 4px; }
+.boon-chip {
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #2a1a0c;
+  background: linear-gradient(180deg, #ffd08a, #e79a3c);
+  border-radius: 3px;
+  padding: 2px 6px;
+  white-space: nowrap;
+}
+#build-boons:empty::after {
+  content: 'none yet';
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  opacity: 0.7;
+}
+
+.toggle {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 3px 7px;
+  margin-left: 6px;
+  display: inline-block;
+}
+.toggle.off { opacity: 0.35; }
+
+/* --- the offerings: three cards over the held world, the whole progression in one click --- */
+#offers {
+  position: fixed;
+  inset: 0;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 14px;
+  padding-bottom: 6vh;
+  /* The grove stays visible: the offering is a table laid over a live scene, not a screen that
+     replaces it. A full-opacity scrim read as a black plate on a contact sheet. */
+  background: linear-gradient(to bottom, rgba(9, 12, 18, 0.0) 0%, rgba(9, 12, 18, 0.16) 45%, rgba(9, 12, 18, 0.48) 100%);
+  transition: opacity 0.25s ease;
+}
+#offers.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+#offers-title {
+  font-size: 26px;
+  margin: 0;
+  letter-spacing: 0.04em;
+  color: #ffe9b8;
+  text-shadow: 0 0 24px rgba(255, 178, 87, 0.4);
+}
+#offers-sub { margin: 0; font-size: 13px; color: var(--ink-dim); font-style: italic; }
+#offers-row { display: flex; gap: 16px; margin-top: 6px; }
+.offer {
+  width: min(230px, 26vw);
+  min-height: 150px;
+  padding: 16px 16px 14px;
+  text-align: left;
+  background: linear-gradient(180deg, rgba(38, 28, 18, 0.94), rgba(20, 16, 13, 0.94));
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--ink);
+  font-family: inherit;
+  cursor: pointer;
+  transition: transform 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
+}
+.offer:hover, .offer:focus-visible {
+  transform: translateY(-3px);
+  border-color: rgba(255, 205, 130, 0.85);
+  box-shadow: 0 8px 26px rgba(255, 150, 60, 0.22);
+  outline: none;
+}
+.offer-index {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #ffb257;
+  opacity: 0.85;
+}
+.offer-theme { font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-dim); margin-top: 2px; }
+.offer-name { font-size: 19px; margin: 8px 0 8px; color: #ffe9b8; }
+.offer-text { font-size: 12.5px; line-height: 1.45; color: var(--ink); opacity: 0.92; }
+#offers-hint { margin: 0; font-size: 11.5px; letter-spacing: 0.06em; color: var(--ink-dim); opacity: 0.8; }
+
+/* --- paused: the world is held, and the plate says so --- */
+#paused {
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: rgba(9, 12, 18, 0.55);
+  pointer-events: none;
+}
+#paused.hidden { display: none; }
+#paused span { font-size: 34px; letter-spacing: 0.22em; text-transform: uppercase; color: #ffe9b8; }
+#paused small { font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-dim); }
 
 /* --- fire pips: one bar per brazier, recoloured by the game. --- */
 #fire-pips { display: flex; gap: 8px; }

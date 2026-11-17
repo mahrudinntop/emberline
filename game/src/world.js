@@ -9,20 +9,42 @@
    fire to bring it back. Winds rise each night. When the last fire goes out, the grove goes dark. */
 
 // --- imports ---
-import { FIRES, KEEPER, SCORE, SHADES, STEP, NIGHTS } from './config.js';
+import { FIRES, KEEPER, SCORE, SHADES, STEP, NIGHTS, BOONS, ENDLESS } from './config.js';
 
 // --- shared enums: game phases and shade kinds ---
-export const PHASE = { TITLE: 'title', BRIEF: 'brief', PLAY: 'play', DAWN: 'dawn', OVER: 'over' };
+export const PHASE = { TITLE: 'title', BRIEF: 'brief', PLAY: 'play', DAWN: 'dawn', PICK: 'pick', OVER: 'over' };
 export const KIND = { WISP: 'wisp', STALKER: 'stalker', BEARER: 'bearer' };
 
 // --- small helpers ---
 const TAU = Math.PI * 2;
 const dist2 = (ax, az, bx, bz) => { const dx = ax - bx, dz = az - bz; return dx * dx + dz * dz; };
 
+// --- the run's memory: best score and watches survive a reload, and a missing store is normal
+// --- (node has no localStorage, so a headless sweep simply sees a fresh grove).
+const STORE_KEY = 'emberline.meta.v1';
+function loadMeta() {
+  try {
+    if (typeof localStorage === 'undefined') return {};
+    const raw = localStorage.getItem(STORE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch { return {}; }
+}
+function saveMeta(meta) {
+  try {
+    if (typeof localStorage === 'undefined') return;
+    localStorage.setItem(STORE_KEY, JSON.stringify(meta));
+  } catch { /* a private window is still a playable window */ }
+}
+
 // --- the World class: the whole simulation ---
 export class World {
   constructor(random) {
+    // The run's memory outlives the run: a best score and a count of watches turn a single night
+    // into a reason to press R one more time. Read once from storage, so the title screen can say
+    // what the grove has already seen.
     this.random = random;
+    this.meta = loadMeta();
+    this.best = this.meta.best ?? 0;
     this.reset();
   }
 
@@ -32,7 +54,8 @@ export class World {
     this.phase = PHASE.TITLE;
     this.night = 0;
     this.score = 0;
-    this.best = this.best ?? 0;
+    this.won = false;
+    this.endless = false;
     this.clock = 0;
     this.nightClock = 0;
     this.combo = 0;
@@ -41,6 +64,16 @@ export class World {
     this.shake = 0;
     this.banner = null;
     this.overReason = '';
+    // The run's build: modifiers the offerings have stacked so far, the boons taken, and the
+    // three on the table right now. Everything a boon does lives in `mods` — the rules below
+    // read mods, never the boon list, so a new boon is a line here and nowhere else.
+    this.mods = {
+      wickMax: 0, passiveGain: 0, raiseBurn: 0, raiseRetain: KEEPER.raiseRetain,
+      drainMul: 1, lightAdd: 0, hitDrainMul: 1, startCache: 0,
+      burnMul: 1, raiseRadius: 0, boltDamage: 1.7, hurlCost: KEEPER.hurlCost, lureRadius: 11,
+    };
+    this.taken = [];
+    this.offers = null;
 
     this.fires = [];
     const start = r.angle();
@@ -121,15 +154,106 @@ export class World {
     const base = FIRES.lightMin + (FIRES.lightMax - FIRES.lightMin) * (0.35 + 0.65 * health);
     const bloom = fire.bite > 0 ? fire.bite * 0.8 : 0;
     const rise = Math.min(1, fire.fuel / 18) ** 0.6;
-    return (base + bloom) * rise;
+    return (base + bloom + this.mods.lightAdd) * rise;
   }
 
   // --- keeperRadius: the lantern's own reach.
   /** The keeper's own light: the lantern reaches much further while it is raised. */
   keeperRadius() {
     const k = this.keeper;
-    const base = 3.4 + 3.9 * Math.max(0, Math.min(1, k.wick / KEEPER.wickMax));
-    return k.raised ? KEEPER.raiseRadius + base * 0.35 : base;
+    const base = 3.4 + 3.9 * Math.max(0, Math.min(1, k.wick / this.wickMax()));
+    return k.raised ? KEEPER.raiseRadius + this.mods.raiseRadius + base * 0.35 : base;
+  }
+
+  // --- the run's build, read back as numbers ------------------------------------------------
+  /** Every rule below reads the run through these, never through a boon id, so the offerings
+      stay data and the rules stay one language. */
+  wickMax() { return KEEPER.wickMax + this.mods.wickMax; }
+
+  /** One line of memory per run: the best score and how many watches the grove has seen. */
+  persistBest() {
+    this.best = Math.max(this.best ?? 0, this.score ?? 0);
+    const m = this.meta ?? (this.meta = {});
+    m.best = this.best;
+    m.runs = (m.runs ?? 0) + 1;
+    saveMeta(m);
+  }
+
+  /** The five-night arc is an ending; the deep grove is the same rules on a steeper curve.
+      Each repeat is longer, fuller and faster to spawn than the last. */
+  nightSpec() {
+    if (this.night <= NIGHTS.length) return NIGHTS[Math.min(this.night, NIGHTS.length) - 1] ?? NIGHTS[0];
+    const repeat = this.night - NIGHTS.length - 1;      // 0-based deep-grove night
+    const g = 1 + ENDLESS.growth * (repeat + 1);
+    return {
+      length: ENDLESS.nightLength + repeat * 8,
+      wisp: Math.round(20 * g),
+      stalker: Math.round(9 * g),
+      bearer: Math.round(5 * g),
+      gap: Math.max(ENDLESS.gapFloor, 1.05 * ENDLESS.gapDecay ** (repeat + 1)),
+    };
+  }
+
+  // --- the offerings: three boons, one from each theme ---------------------------------------
+  /** Lay three boons on the table: one Wick, one Fire, one Ember, shuffled. The run's RNG picks,
+      so a seed replays the same offers. */
+  offerBoons() {
+    const r = this.random;
+    const offers = BOONS.map((theme) => {
+      const item = theme.items[r.int(0, theme.items.length - 1)];
+      return { theme: theme.theme, ...item };
+    });
+    r.shuffle(offers);
+    this.offers = offers;
+    this.phase = PHASE.PICK;
+    return offers;
+  }
+
+  /** The autopilot cannot click: it always wants the same things in the same order, which keeps
+      a sweep reproducible. */
+  pilotPick() {
+    const order = ['banked-coals', 'deep-well', 'hot-blade', 'wide-light', 'quick-mend', 'wide-reach', 'thick-wood', 'steady-hand', 'long-lure', 'big-blast', 'long-carry', 'ember-cache'];
+    for (let i = 0; i < order.length; i += 1) {
+      const at = this.offers.findIndex((o) => o.id === order[i]);
+      if (at >= 0) return at;
+    }
+    return 0;
+  }
+
+  /** Take boon `i` from the table, fold it into the run, and walk into the next night. */
+  chooseBoon(i) {
+    if (this.phase !== PHASE.PICK || this.offers === null) return false;
+    const boon = this.offers[i];
+    if (!boon) return false;
+    const m = this.mods;
+    switch (boon.id) {
+      case 'deep-well': m.wickMax += 25; m.passiveGain += 0.5; break;
+      case 'quick-mend': m.passiveGain += 2.6; break;
+      case 'steady-hand': m.raiseBurn -= 1.4; break;
+      case 'long-carry': m.raiseRetain = Math.min(1, m.raiseRetain + 0.4); break;
+      case 'banked-coals': m.drainMul *= 0.72; break;
+      case 'wide-light': m.lightAdd += 2.0; break;
+      case 'thick-wood': m.hitDrainMul *= 0.7; break;
+      case 'ember-cache': m.startCache += 40; break;
+      case 'hot-blade': m.burnMul *= 1.32; break;
+      case 'wide-reach': m.raiseRadius += 1.6; break;
+      case 'big-blast': m.boltDamage = 2.6; m.hurlCost = 10; break;
+      case 'long-lure': m.lureRadius = 15; break;
+      default: break;
+    }
+    this.taken.push(boon.id);
+    this.offers = null;
+    this.startNight();
+    return true;
+  }
+
+  /** The campaign is won; the deep grove is open to whoever wants to keep walking. */
+  startEndless() {
+    if (this.phase !== PHASE.OVER || this.won !== true) return false;
+    this.endless = true;
+    this.won = false;
+    this.offerBoons();
+    return true;
   }
 
   // --- litAt: is a point inside any light?
@@ -158,12 +282,12 @@ export class World {
     const d = Math.hypot(x - k.x, z - k.z);
     if (d > r) return 0;
     const t = 1 - d / r;
-    return KEEPER.burnPerSecond * (0.35 + t * t * 1.35) * 2.2;
+    return KEEPER.burnPerSecond * (0.35 + t * t * 1.35) * 2.2 * this.mods.burnMul;
   }
 
-  // --- startNight: build this night's spawn queue from the NIGHTS spec.
+  // --- startNight: build this night's spawn queue from the night spec.
   startNight() {
-    const spec = NIGHTS[Math.min(this.night, NIGHTS.length - 1)];
+    const spec = this.nightSpec();
     this.night += 1;
     this.phase = PHASE.PLAY;
     this.nightClock = 0;
@@ -180,7 +304,9 @@ export class World {
       this.spawnQueue.push({ t, kind: kinds[i] });
       t += spec.gap * r.range(0.65, 1.45);
     }
-    this.banner = { text: `Night ${this.night}`, life: 2.6, sub: spec.bearer > 0 ? 'A bearer walks abroad tonight.' : '' };
+    // The banner names the deep grove as what it is: the campaign is behind the player now.
+    const deep = this.night > NIGHTS.length;
+    this.banner = { text: `Night ${this.night}${deep ? ' · deep grove' : ''}`, life: 2.6, sub: spec.bearer > 0 ? 'A bearer walks abroad tonight.' : '' };
     // A night begins with the ring freshly fed and the grove empty: a fire carried over at 4%
     // fuel was never a rule anyone could play against, it was a bug pretending to be a rule.
     for (let i = 0; i < this.fires.length; i += 1) {
@@ -194,6 +320,9 @@ export class World {
     // The spawn clock is a per-night clock: without this reset every night after the first
     // dumps its entire queue in one frame, and the wave pacing in NIGHTS is dead on arrival.
     this.spawnClock = 0;
+    // The keeper carries the run, not the night: the wick refills to the build's capacity, and
+    // any ember cache a boon granted is paid in on the way in.
+    this.keeper.wick = Math.min(this.wickMax(), this.keeper.wick + this.mods.startCache);
     return this;
   }
 
@@ -235,7 +364,7 @@ export class World {
     }
     if (k.raised && best !== null) {
       const dk = Math.hypot(shade.x - k.x, shade.z - k.z);
-      if (dk < 11) return { keeper: true };
+      if (dk < this.mods.lureRadius) return { keeper: true };
     }
     return best === null ? { keeper: true } : { fire: best };
   }
@@ -243,8 +372,8 @@ export class World {
   // --- throwBolt: spend wick to hurl an ember.
   throwBolt() {
     const k = this.keeper;
-    if (k.hurlClock > 0 || k.wick < KEEPER.hurlCost) return false;
-    k.wick -= KEEPER.hurlCost;
+    if (k.hurlClock > 0 || k.wick < this.mods.hurlCost) return false;
+    k.wick -= this.mods.hurlCost;
     k.hurlClock = KEEPER.hurlCooldown;
     this.bolts.push({
       x: k.x, z: k.z,
@@ -294,19 +423,29 @@ export class World {
       return events;
     }
 
+    // --- the offerings on the table: the world holds its breath while the player chooses.
+    // The autopilot cannot click, so it chooses at once, which keeps a sweep a straight line.
+    if (this.phase === PHASE.PICK) {
+      this.tickSparks(dt);
+      if (auto && this.offers !== null) this.chooseBoon(this.pilotPick());
+      return events;
+    }
+
     if (this.phase === PHASE.DAWN) {
       this.clock += 0;
       this.nightClock += dt;
       this.tickSparks(dt);
       if (this.nightClock > 3.2) {
-        if (this.night >= NIGHTS.length) {
+        if (this.night >= NIGHTS.length && !this.endless) {
           this.phase = PHASE.OVER;
           this.won = true;
           this.overReason = 'The fifth night broke. The fires hold.';
-          this.best = Math.max(this.best, this.score);
+          this.persistBest();
           events |= 8;
         } else {
-          this.startNight();
+          // Between nights the grove offers a choice: one boon from each theme, and the run
+          // only grows in the direction the player picks. The deep grove walks this road too.
+          this.offerBoons();
           events |= 4;
         }
       }
@@ -346,8 +485,8 @@ export class World {
     // --- the lantern: raised reaches and burns, lowered recovers ---
     const wantRaise = auto ? input.raise : input.raise;
     k.raised = !!wantRaise;
-    let drain = KEEPER.idleBurn + (k.raised ? KEEPER.raiseBurn : 0);
-    let gain = k.raised ? 0 : KEEPER.passiveGain;
+    let drain = KEEPER.idleBurn + (k.raised ? Math.max(0.6, KEEPER.raiseBurn + this.mods.raiseBurn) : 0);
+    let gain = k.raised ? 0 : KEEPER.passiveGain + this.mods.passiveGain;
     // Standing in a lit fire's light is the refuge: it is what makes the ring a home.
     for (let i = 0; i < this.fires.length; i += 1) {
       const f = this.fires[i];
@@ -356,13 +495,13 @@ export class World {
     }
     // A raised lantern still banks part of a fire's light: without this, wick is only ever
     // spendable, never earnable while you fight, and the ember is not a decision but a trap.
-    if (k.raised) gain *= KEEPER.raiseRetain;
-    k.wick = Math.max(0, Math.min(KEEPER.wickMax, k.wick - drain * dt + gain * dt));
+    if (k.raised) gain *= this.mods.raiseRetain;
+    k.wick = Math.max(0, Math.min(this.wickMax(), k.wick - drain * dt + gain * dt));
     if (k.wick <= 0 && !k.raised) {
       this.phase = PHASE.OVER;
       this.won = false;
       this.overReason = 'The wick burnt down to nothing.';
-      this.best = Math.max(this.best, this.score);
+          this.persistBest();
       events |= 8; events |= 1;
       return events;
     }
@@ -374,7 +513,7 @@ export class World {
       f.bite = Math.max(0, f.bite - dt * 1.6);
       f.sway += dt * (1.1 + i * 0.13);
       if (!f.lit) continue;
-      f.fuel -= FIRES.drain * dt * (1 + this.night * 0.05);
+      f.fuel -= FIRES.drain * dt * (1 + this.night * 0.05) * this.mods.drainMul;
       if (f.fuel <= 0) {
         f.fuel = 0;
         f.lit = false;
@@ -388,7 +527,7 @@ export class World {
       this.phase = PHASE.OVER;
       this.won = false;
       this.overReason = 'Every fire went out. The grove is dark.';
-      this.best = Math.max(this.best, this.score);
+          this.persistBest();
       events |= 8;
       return events;
     }
@@ -424,7 +563,7 @@ export class World {
       for (let j = 0; j < this.shades.length; j += 1) {
         const s = this.shades[j];
         if (dist2(b.x, b.z, s.x, s.z) < 1.55 * 1.55) {
-          s.hp -= 1.7;
+          s.hp -= this.mods.boltDamage;
           s.hurt = 0.3;
           hit = true;
           break;
@@ -497,7 +636,7 @@ export class World {
           s.biteClock -= dt;
           if (s.biteClock <= 0) {
             s.biteClock = FIRES.biteEvery;
-            f.fuel = Math.max(0, f.fuel - FIRES.hitDrain * s.fireDamage);
+            f.fuel = Math.max(0, f.fuel - FIRES.hitDrain * s.fireDamage * this.mods.hitDrainMul);
             f.bite = 1;
             this.shake = Math.max(this.shake, 0.3);
             this.addSpark(f.x, f.z, 5, 0.5);
