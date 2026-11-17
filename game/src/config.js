@@ -11,11 +11,11 @@ export const GROVE = {
 
 export const FIRES = {
   count: 5,
-  ring: 13.6,
-  drain: 1.1,           // fuel lost per second while lit
-  hitDrain: 7,          // fuel a shade bite takes
+  ring: 11.2,          // fires closer: one raised lantern can bridge the ring
+  drain: 0.62,          // fuel lost per second while lit
+  hitDrain: 4.5,        // fuel a shade bite takes
   biteEvery: 1.15,
-  relightCost: 0.65,    // wick per point of fuel poured
+  relightCost: 0.34,    // wick per point of fuel poured
   pourRate: 24,         // fuel points per second poured at close range
   lightMin: 6.5,
   lightMax: 15.5,
@@ -28,10 +28,11 @@ export const KEEPER = {
   idleBurn: 0.55,       // wick lost per second, always
   raiseBurn: 4.6,       // extra wick per second while the lantern is raised
   passiveGain: 1.05,    // wick regained per second while the lantern is lowered
-  fireGain: 4.4,        // extra wick per second while standing in a lit fire's light
+  fireGain: 6.2,        // extra wick per second while standing in a lit fire's light
+  raiseRetain: 0.45,    // fraction of a fire's light the raised lantern still banks (see world.js)
   hurtWick: 12,         // wick a shade bite takes
   hurtEvery: 0.9,
-  raiseRadius: 9.2,
+  raiseRadius: 10.5,   // one keeper can defend three fires at once
   burnPerSecond: 1.05,  // shade damage while held in raised light
   hurlCost: 15,
   hurlSpeed: 21,
@@ -51,8 +52,8 @@ export const NIGHTS = [
   { length: 62, wisp: 14, stalker: 2, bearer: 0, gap: 1.7 },
   { length: 72, wisp: 18, stalker: 5, bearer: 0, gap: 1.45 },
   { length: 82, wisp: 20, stalker: 7, bearer: 2, gap: 1.25 },
-  { length: 92, wisp: 22, stalker: 9, bearer: 4, gap: 1.1 },
-  { length: 102, wisp: 26, stalker: 11, bearer: 6, gap: 0.95 },
+  { length: 92, wisp: 18, stalker: 7, bearer: 3, gap: 1.2 },
+  { length: 102, wisp: 20, stalker: 8, bearer: 4, gap: 1.05 },
 ];
 
 export const SCORE = {

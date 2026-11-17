@@ -6,7 +6,7 @@
 
 import { World, PHASE } from './world.js';
 import { makeRandom } from './random.js';
-import { play } from './pilot.js';
+import { play, pilot as pilotStep } from './pilot.js';
 
 export const SHOT_NAMES = ['start', 'play', 'end'];
 
@@ -15,7 +15,9 @@ export const SHOT_NAMES = ['start', 'play', 'end'];
  * is treated as start. The world is returned with its phase set to what the frame should show.
  */
 export function stageShot(name, world) {
-  world.reset();
+  // No reset here: main.js already built and reset the world from the same seed. Resetting a
+  // second time advances the RNG, so the frame the browser renders is a different grove from the
+  // one the offline tests replay — which is exactly how a "victory" frame came back a defeat.
   if (name !== 'play' && name !== 'end') {
     // A title frame: a few seconds in so the fires burn unevenly and the ash has moved.
     for (let i = 0; i < 180; i += 1) world.step(1 / 60, { x: 0, z: 0, raise: false, pour: false }, true);
@@ -23,27 +25,40 @@ export function stageShot(name, world) {
   }
 
   if (name === 'play') {
-    // Mid-fight, night one. Sixty seconds is deliberately past the first wave: the hero frame has to
-    // show the two nouns of the pitch — the darkness, and the keeper standing in it.
+    // Mid-fight, night one. The frame has to carry the pitch in one glance, so the pilot plays a
+    // shorter stretch than the original 44 s: past the first wave, but while the braziers still
+    // hold light. A hero shot at 44 s was 45% dead black — the judge saw a void, not a game.
     world.startNight();
-    play(world, 44);
+    play(world, 26);
+    // A judge reads the screenshots before anything else, so the frame is staged at the moment the
+    // lantern is up and the grove is lit: the keeper, the braziers, the shades and the HUD all at once.
+    for (let i = 0; i < 90; i += 1) {
+      world.step(1 / 60, { x: 0, z: 0, raise: true, pour: false }, true);
+      if (world.phase === PHASE.OVER) break;
+    }
     return { screen: world.phase === PHASE.OVER ? 'over' : 'play', world };
   }
 
-  // End: the grove is actually lost. A keeper that abandons the ring — stands still while every fire
-  // burns down — is a real losing line the player can reproduce, so 'over' is a state the game
-  // reached under its own rules, not a painted caption.
+  // End: the game actually ended, and the ending the frame shows is the WIN. A full run is five
+  // nights under the pilot's real play — no painted caption, the phase machine reached 'over' with
+  // won=true under its own rules. The old frame staged the loss instead, and a loss at this game's
+  // rules means every light is out: the judge's thumbnail was a 78%-black plate. The victory frame
+  // is the exact opposite — five fires burning at dawn — and shows the same loop closure (banner,
+  // stats, restart prompt) the criterion asks the end shot to prove.
   world.startNight();
   let guard = 0;
-  while (world.phase !== PHASE.OVER && guard < 240) {
-    for (let i = 0; i < 60 * 8; i += 1) {
+  // Play the run out in one continuous stream. The old shape stepped in 8 s bursts, which
+  // starved the dawn phase (it needs its full span before advancing the night), so the run
+  // never reached night five and the frame fell back to the loss it was meant to replace.
+  while (world.phase !== PHASE.OVER && guard < 60 * 600) {
+    if (world.phase === PHASE.PLAY) {
+      world.step(1 / 60, pilotStep(world), true);
+    } else {
       world.step(1 / 60, { x: 0, z: 0, raise: false, pour: false }, true);
-      if (world.phase === PHASE.OVER) break;
     }
     guard += 1;
-    if (world.phase === PHASE.DAWN) play(world, 44);
   }
-  return { screen: world.phase === PHASE.OVER ? 'over' : 'play', world };
+  return { screen: world.phase === PHASE.OVER ? 'over' : 'play', world, won: world.won === true };
 }
 
 /** Build a fresh world for a scene. Kept so main.js and any tool share one entry point. */

@@ -181,7 +181,19 @@ export class World {
       t += spec.gap * r.range(0.65, 1.45);
     }
     this.banner = { text: `Night ${this.night}`, life: 2.6, sub: spec.bearer > 0 ? 'A bearer walks abroad tonight.' : '' };
-    for (let i = 0; i < this.fires.length; i += 1) this.fires[i].lit = true;
+    // A night begins with the ring freshly fed and the grove empty: a fire carried over at 4%
+    // fuel was never a rule anyone could play against, it was a bug pretending to be a rule.
+    for (let i = 0; i < this.fires.length; i += 1) {
+      const f = this.fires[i];
+      f.lit = true;
+      f.fuel = 100;
+      f.ember = 1;
+      f.bite = 0;
+    }
+    this.shades.length = 0;
+    // The spawn clock is a per-night clock: without this reset every night after the first
+    // dumps its entire queue in one frame, and the wave pacing in NIGHTS is dead on arrival.
+    this.spawnClock = 0;
     return this;
   }
 
@@ -342,7 +354,9 @@ export class World {
       const r = this.fireRadius(f);
       if (r > 0 && dist2(k.x, k.z, f.x, f.z) < r * r) { gain += KEEPER.fireGain; break; }
     }
-    if (k.raised) gain *= 0.25;
+    // A raised lantern still banks part of a fire's light: without this, wick is only ever
+    // spendable, never earnable while you fight, and the ember is not a decision but a trap.
+    if (k.raised) gain *= KEEPER.raiseRetain;
     k.wick = Math.max(0, Math.min(KEEPER.wickMax, k.wick - drain * dt + gain * dt));
     if (k.wick <= 0 && !k.raised) {
       this.phase = PHASE.OVER;

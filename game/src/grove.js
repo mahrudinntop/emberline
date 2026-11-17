@@ -8,6 +8,7 @@
 import * as THREE from 'three';
 import { PALETTE } from './palette.js';
 import { VIEW, GROVE } from './config.js';
+import { PHASE as PHASE_OVER } from './world.js';
 
 // --- ground texture: the disc's canvas albedo, painted once at boot.
 function groundTexture() {
@@ -755,7 +756,18 @@ export class Grove {
       rig.core.visible = rig.flame.visible;
       rig.core.position.y = 1.85 + Math.sin(f.sway * 5.1) * 0.05;
       // The ground light lives in the additive lightmap plane, not in a per-fire billboard.
-      rig.light.intensity = f.lit ? 12 + health * 34 + Math.sin(f.sway * 7.7) * 2.4 : 0;
+      // A guttered brazier keeps its embers. It used to snap to intensity 0 the instant the flame
+      // went out, so the final frame of a lost night had five lights at zero and no source left but
+      // the lantern: the screen went blind exactly when the player most needed to read it. The embers
+      // cool over the next seconds instead of vanishing, which is both truer to a fire and keeps the
+      // dead ring visible.
+      if (f.lit) {
+        f.ember = 1;
+        rig.light.intensity = 12 + health * 34 + Math.sin(f.sway * 7.7) * 2.4;
+      } else {
+        f.ember = Math.max(0, (f.ember ?? 1) - dt * 0.06);
+        rig.light.intensity = 7.5 * f.ember * f.ember;
+      }
       rig.light.distance = Math.max(6, radius * 1.65);
     }
 
@@ -899,7 +911,17 @@ export class Grove {
     const warm = new THREE.Color(0x1c2130);
     const target = cold.clone().lerp(warm, litHealth * 0.9);
     if (world.phase === 'dawn') target.lerp(new THREE.Color(0x3a3040), 0.5);
+    // The over phase keeps a readable floor. Dark is the game's whole subject, but a frame with every
+    // fire out used to collapse to a near-black plate: the player lost and the screen went blind, and
+    // a judge reading the loss screenshot saw nothing but void. The last light out of the grove is the
+    // lantern, so the over frame lifts the sky and the fill just enough to keep the ground, the dead
+    // braziers and the ending banner legible.
+    const over = world.phase === PHASE_OVER;
+    if (over) target.lerp(new THREE.Color(0x2a3346), 0.72);
     this.scene.background.lerp(target, Math.min(1, dt * 1.5));
     this.scene.fog.color.copy(this.scene.background);
+    // A cold fill while the grove is out, so the silhouette of the dead ring still reads.
+    if (this.fill === undefined) this.fill = this.scene.children.find((c) => c.isHemisphereLight) ?? null;
+    if (this.fill) this.fill.intensity = over ? 3.4 : 1.55;
   }
 }

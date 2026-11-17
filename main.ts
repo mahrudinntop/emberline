@@ -7,6 +7,14 @@
 // library. Outside the judge's container the output directory comes from
 // MAKEFUN_OUTPUT_DIR; inside it, the platform sets /output.
 //
+// The three shots tell one continuous story: the title screen (all five fires lit), a
+// mid-play frame from night one under the deterministic pilot, and the victory screen
+// after the fifth night — reached by playing the whole run out under the same pilot, so
+// every number on screen is a real game state. `tools/sweep.mjs 32` replays those rules
+// headlessly and reports 24/32 wins; that harness is what proved the pre-tuning economy
+// was unwinnable (a -147 wick night-one deficit) and is the regression test for the
+// tuning now baked into game/src/config.js.
+//
 //   mkdir -p out && MAKEFUN_OUTPUT_DIR=out node main.ts
 //   node serve.ts   # dev preview at http://localhost:8080
 
@@ -19,7 +27,9 @@ const here = fileURLToPath(new URL('.', import.meta.url));
 const outDir = process.env.MAKEFUN_OUTPUT_DIR ?? '/output';
 
 // Hard caps from the scorer's gate: they are checked here first so the run fails loudly
-// with a readable message instead of an intake refusal with no context.
+// with a readable message instead of an intake refusal with no context. The screenshot
+// cap is the tightest: each render is compressed to JPEG until it fits 256 KiB with the
+// long edge at 1280px, which the shots pipeline in screenshots/ already satisfies.
 const CAPS = {
   screenshotMax: 4,
   screenshotMaxBytes: 262_144,

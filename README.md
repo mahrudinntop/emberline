@@ -14,16 +14,24 @@ Play in a browser: open `game/index.html`. No build step, no network request, no
 
 ## The loop
 
-- **Five fires, one keeper.** Fires only stay lit while you are near them. Walk away and they gutter:
-  nine seconds of dark takes a fire.
-- **Raise the lantern (hold the mouse button).** Light is a held commitment, not a toggle. While you
-  hold, a fire burns steady and the wick drains.
-- **Hurl an ember (click).** A ranged relight, for the fire on the far side of the grove you cannot
-  reach in time. It costs wick and it is imprecise: it buys you a few seconds, not a rescue.
-- **The wick is the clock.** The wick bar is what actually runs out. When it does, every fire you left
-  behind goes dark at once.
-- **Five nights.** Each night adds a wave of shades that drink light. Score is fires kept, night
-  reached, and how much of the wick you had left when it ended.
+- **Five fires, one keeper, about sixteen units apart.** Fires blink out on their own fuel in roughly
+  two and a half minutes, three times faster with a shade chewing on them. Walk away from a fire and
+  it keeps burning — you are not its battery, you are its repair crew.
+- **Pour the wick to heal a fire (stand close, no raise).** Your wick is the repair budget and the
+  fires' fuel is the health bar. Pouring is the *only* way either currency goes up: pouring refills a
+  fire, standing in a lit fire's light refills you. That trade is the entire economy.
+- **Raise the lantern (hold the mouse button).** Light is a held commitment, not a toggle. Raised,
+  the lantern burns a wide disc — everything inside it takes damage every second, all at once. It is
+  the only way to kill a shade: a thrown ember is 15 wick for 1.7 damage against a wisp that has 1
+  health, so hurling can only slow a wave, never clear one.
+- **A raised lantern is bait.** Shades within eleven units abandon their fires and come for you, and
+  fires near your raised light get a big discount on being attacked. A keeper standing raised between
+  two chewed fires is a wall: the wave walks into the light and burns.
+- **The wick is the clock.** Not a countdown — a battery you spend to fight and refill by standing in
+  light. Raise too long and you run dry with no light left to bank against. Never raise and every fire
+  eventually starves. The tension is exactly that.
+- **Five nights.** Each night a longer wave of wisp, stalker and bearer. Score is shades banished,
+  fires kept, night reached, and wick left when it ended.
 
 ## What is in this repository
 
@@ -66,9 +74,18 @@ brightest pixel in the frame and the grove read as props pasted onto a gradient.
 which quietly breaks every pixel-to-ground measurement the layout depends on: the yaw is set directly
 and pitch is solved with `atan2`.
 
-**Screenshots are staged, not screenshotted by hand.** `?shot=play&seed=29` runs the deterministic
-pilot through the real rules for 38 seconds, so the mid-play frame is a real game state — real fuel
-levels, real shades, real score — reachable by pressing the same keys.
+**Screenshots are staged, not screenshotted by hand.** `?shot=play&seed=5` runs the deterministic
+pilot through the real rules for 26 seconds, so the mid-play frame is a real game state — real fuel
+levels, real shades, real score. The `end` frame plays the whole run out in one continuous stream
+under the same pilot and captures the *victory* screen: five fires still burning at dawn. Nothing is
+painted on afterwards; the phase machine reaches `over` with `won === true` under its own rules.
+
+**The PILOT is the regression test.** `tools/sweep.mjs 32` replays the real rules headlessly under
+the autopilot and counts wins. It is what proved the game was unwinnable before the tuning pass: a
+night-one budget of 233 wick of ambient fire burn plus up to 218 wick of shade bites against a
+maximum income of 304 wick is a deficit no player can close. The same harness now reports 24/32
+wins, and `tools/budget.mjs` derives that arithmetic straight from `config.js` so it can never drift
+out of step with the tuning.
 
 ## Running it
 
