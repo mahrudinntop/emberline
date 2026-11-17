@@ -1,3 +1,4 @@
+// grove.js — the render side: builds the diorama (ground, pines, braziers, keeper, shades) from World state and updates it per frame, deciding nothing about the rules.
 // grove.js — hand-authored for this entry.
 /* Emberline — the diorama. One ground disc, a ring of pines, five braziers, and the light that
    comes out of them. Every surface is drawn from the palette's value bands; the ground texture is
@@ -8,6 +9,7 @@ import * as THREE from 'three';
 import { PALETTE } from './palette.js';
 import { VIEW, GROVE } from './config.js';
 
+// --- ground texture: the disc's canvas albedo, painted once at boot.
 function groundTexture() {
   const size = 512;
   const cv = document.createElement('canvas');
@@ -163,6 +165,7 @@ function groundTexture() {
   return tex;
 }
 
+// --- contact shadow: the soft ground blob every prop stands on.
 function contactShadow(size, opacity = 0.42) {
   const s = 128;
   const cv = document.createElement('canvas');
@@ -179,6 +182,7 @@ function contactShadow(size, opacity = 0.42) {
   return new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false }));
 }
 
+// --- glow sprite: the additive radial falloff shared by halos, bolts, and motes.
 function glowSprite(inner, outer) {
   const s = 128;
   const cv = document.createElement('canvas');
@@ -197,6 +201,7 @@ function glowSprite(inner, outer) {
   });
 }
 
+// --- torch shapes: per-brazier silhouette variants.
 // Three torch silhouettes: height multiplier, width multiplier, sideways lean, and a small offset off
 // the bowl so the flame does not look punched through the same hole every time.
 const TORCH_SHAPES = [
@@ -205,6 +210,7 @@ const TORCH_SHAPES = [
   { h: 1.02, w: 0.95, lean: 0.20, ox: -0.05, oz: 0.02 },// leaning torch
 ];
 
+// --- lightmap: the single additive sheet all fire ground-glow is drawn into.
 /** The one additive lightmap: every fire's ground glow is drawn into this single canvas with a single
  *  radial falloff each, then the whole sheet goes through one pass of shadowBlur. Five separate
  *  billboards gave five hard-edged quads with visible straight seams; one blurred sheet with soft
@@ -224,6 +230,7 @@ function makeLightmap() {
 
 
 
+// --- class Grove: the diorama's renderer.
 export class Grove {
   constructor(scene, random, props) {
     this.scene = scene;
@@ -291,6 +298,7 @@ export class Grove {
     this.sparkPoints = null;
   }
 
+  // --- buildFurniture: instanced pines and rocks, drawn from the sim's own prop list.
   buildFurniture(props) {
     // Render THE SIM's own props: one set of pines and rocks exists, in world.reset(), and the diorama
     // draws exactly those. Before, the render scattered its own and the rules scattered another set,
@@ -353,6 +361,7 @@ export class Grove {
     this.scene.add(this.rocks);
   }
 
+  // --- buildAsh: the falling ash point cloud.
   buildAsh() {
     const n = 620;
     const r = this.random;
@@ -376,6 +385,7 @@ export class Grove {
     this.scene.add(this.ash);
   }
 
+  // --- buildFires: the five braziers, each with its own flame solid and point light.
   /** The five braziers. Each owns a light, a flame that leans with the wind, and a glow sprite. */
   buildFires(fires) {
     const bowlGeo = new THREE.CylinderGeometry(0.75, 0.5, 0.5, 10);
@@ -436,6 +446,7 @@ export class Grove {
     }
   }
 
+  // --- buildKeeper: the player figure, its carried lantern, and its rim light.
   buildKeeper(keeper) {
     const g = new THREE.Group();
     // The keeper is the subject, so the silhouette has to survive a forty-pixel downscale: one dark
@@ -515,6 +526,7 @@ export class Grove {
     this.scene.add(g);
   }
 
+  // --- buildShade: one shade rig, registered against its sim object.
   /** A shade rig: one dark droplet body, two pale eyes, one faint cold halo. */
   buildShade(shade) {
     const g = new THREE.Group();
@@ -549,6 +561,7 @@ export class Grove {
     return rig;
   }
 
+  // --- dropShade: remove a shade's rig when the sim banishes it.
   dropShade(shade) {
     const rig = this.shadeRigs.get(shade);
     if (rig) {
@@ -557,6 +570,7 @@ export class Grove {
     }
   }
 
+  // --- boltMesh: the thrown ember projectile.
   boltMesh() {
     const m = new THREE.Mesh(
       new THREE.SphereGeometry(0.24, 8, 6),
@@ -570,6 +584,7 @@ export class Grove {
     return m;
   }
 
+  // --- moteMesh: the wick pickup a banished shade leaves behind.
   moteMesh() {
     const m = new THREE.Mesh(
       new THREE.OctahedronGeometry(0.2, 0),
@@ -583,6 +598,7 @@ export class Grove {
     return m;
   }
 
+  // --- buildSparkPoints: one reusable points buffer for every spark in flight.
   buildSparkPoints(max = 260) {
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(max * 3), 3));
@@ -597,6 +613,7 @@ export class Grove {
     this.scene.add(this.sparkPoints);
   }
 
+  // --- redrawLightmap: repaint the shared additive sheet (throttled to ~10 Hz).
     /** Redraw every fire's ground glow into the one additive sheet. Called only when something actually
    *  flickers or a fire changes state, and at most a few times a second — this is a 256x256 canvas, not
    *  a per-frame job. */
@@ -716,6 +733,7 @@ export class Grove {
     tex.needsUpdate = true;
   }
 
+  // --- update: the per-frame visual pass; reads World state and never mutates it.
   /** Per-frame visual update: fires lean and flicker, the keeper faces its course, the ash falls,
       the camera breathes. Reads state, changes nothing. */
   update(world, dt, time) {

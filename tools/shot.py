@@ -1,14 +1,17 @@
 #!/usr/bin/env python3
+# shot.py — the screenshot harness: drives a ?shot= scene in headless Chromium, collects console errors, and saves a PNG.
 """Emberline — shot tool: load a ?shot= scene headless, wait for the game to say it has drawn,
 collect console errors, and save a PNG. Prints one JSON line so the runner can decide."""
 import json, os, sys, time
 from playwright.sync_api import sync_playwright
 
+# --- arguments and the fixed capture geometry.
 URL = sys.argv[1] if len(sys.argv) > 1 else "http://127.0.0.1:8123/game/index.html?shot=play"
 OUT = sys.argv[2] if len(sys.argv) > 2 else "/tmp/ember_shot.png"
 WAIT = float(sys.argv[3]) if len(sys.argv) > 3 else 8.0
 W, H = 1600, 900
 
+# --- the headless run: open the page, wait for the ready flag, shoot, and read the summary back.
 msg = []
 errors = []
 with sync_playwright() as p:
@@ -29,6 +32,7 @@ with sync_playwright() as p:
     summary = pg.evaluate("window.emberline ? window.emberline.summary() : null")
     b.close()
 
+# --- one JSON line on stdout, so the runner can decide without parsing prose.
 print(json.dumps({
     "url": URL, "out": OUT, "bytes": os.path.getsize(OUT) if os.path.exists(OUT) else 0,
     "errors": errors[:10], "console": [m for m in msg if m.startswith("error") or m.startswith("warning")][:10],

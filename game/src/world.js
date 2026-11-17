@@ -1,3 +1,4 @@
+// world.js — the rules: pure simulation state and per-step logic, with nothing about how any of it is drawn.
 // world.js — hand-authored for this entry.
 /* Emberline — the rules, and nothing about how they are drawn.
    The grove is a disc of dark. Five fires stand on a ring; each holds back the dark within its own
@@ -7,20 +8,25 @@
    fire bites fuel off it. Fuel spent is not lost: the keeper pours their own wick into a guttering
    fire to bring it back. Winds rise each night. When the last fire goes out, the grove goes dark. */
 
+// --- imports ---
 import { FIRES, KEEPER, SCORE, SHADES, STEP, NIGHTS } from './config.js';
 
+// --- shared enums: game phases and shade kinds ---
 export const PHASE = { TITLE: 'title', BRIEF: 'brief', PLAY: 'play', DAWN: 'dawn', OVER: 'over' };
 export const KIND = { WISP: 'wisp', STALKER: 'stalker', BEARER: 'bearer' };
 
+// --- small helpers ---
 const TAU = Math.PI * 2;
 const dist2 = (ax, az, bx, bz) => { const dx = ax - bx, dz = az - bz; return dx * dx + dz * dz; };
 
+// --- the World class: the whole simulation ---
 export class World {
   constructor(random) {
     this.random = random;
     this.reset();
   }
 
+  // --- reset: a fresh grove, ring of fires, keeper, and scattered props.
   reset() {
     const r = this.random;
     this.phase = PHASE.TITLE;
@@ -96,6 +102,7 @@ export class World {
     return this;
   }
 
+  // --- nearestFire: distance from a point to the closest fire.
   nearestFire(x, z) {
     let best = Infinity;
     for (let i = 0; i < this.fires.length; i += 1) {
@@ -105,6 +112,7 @@ export class World {
     return best;
   }
 
+  // --- fireRadius: how far a fire's light actually reaches.
   /** Light radius a fire actually casts: grows as it burns well, shrinks as it gutters, and a
       freshly lit fire blooms past its steady size for a moment. */
   fireRadius(fire) {
@@ -116,6 +124,7 @@ export class World {
     return (base + bloom) * rise;
   }
 
+  // --- keeperRadius: the lantern's own reach.
   /** The keeper's own light: the lantern reaches much further while it is raised. */
   keeperRadius() {
     const k = this.keeper;
@@ -123,6 +132,7 @@ export class World {
     return k.raised ? KEEPER.raiseRadius + base * 0.35 : base;
   }
 
+  // --- litAt: is a point inside any light?
   /** Whether a point is inside any light: a fire's or the raised lantern's. */
   litAt(x, z) {
     for (let i = 0; i < this.fires.length; i += 1) {
@@ -138,6 +148,7 @@ export class World {
     return false;
   }
 
+  // --- burnAt: the damage the raised lantern deals at a point.
   /** The light that does the burning: only the raised lantern. Fires hold shades off, they do not
       kill them, which is what makes carrying the ember a decision rather than a chore. */
   burnAt(x, z) {
@@ -150,6 +161,7 @@ export class World {
     return KEEPER.burnPerSecond * (0.35 + t * t * 1.35) * 2.2;
   }
 
+  // --- startNight: build this night's spawn queue from the NIGHTS spec.
   startNight() {
     const spec = NIGHTS[Math.min(this.night, NIGHTS.length - 1)];
     this.night += 1;
@@ -173,6 +185,7 @@ export class World {
     return this;
   }
 
+  // --- spawnShade: place a new shade at the grove's rim.
   spawnShade(kind) {
     const r = this.random;
     const spec = SHADES[kind];
@@ -194,6 +207,7 @@ export class World {
     });
   }
 
+  // --- chooseTarget: decide what a shade walks toward.
   /** Draw a shade to the closest fire that still has fuel, with the keeper's raised lantern a
       stronger lure: the player can pull a wave off a guttering fire by standing in the open. */
   chooseTarget(shade) {
@@ -214,6 +228,7 @@ export class World {
     return best === null ? { keeper: true } : { fire: best };
   }
 
+  // --- throwBolt: spend wick to hurl an ember.
   throwBolt() {
     const k = this.keeper;
     if (k.hurlClock > 0 || k.wick < KEEPER.hurlCost) return false;
@@ -228,6 +243,7 @@ export class World {
     return true;
   }
 
+  // --- addSpark: spawn a burst of visual sparks.
   addSpark(x, z, count, warmth) {
     const r = this.random;
     for (let i = 0; i < count; i += 1) {
@@ -243,6 +259,7 @@ export class World {
     if (this.sparks.length > 260) this.sparks.splice(0, this.sparks.length - 260);
   }
 
+  // --- step: one fixed-step tick of the whole simulation.
   /** One fixed step. `input` is what the player asked for this step. Returns an event bitmask the
       view can flash on: 1 = damage, 2 = a shade banished, 4 = night cleared, 8 = the grove lost. */
   step(dt, input, auto = false) {
@@ -521,10 +538,12 @@ export class World {
     return events;
   }
 
+  // --- comboMul: the banish-streak score multiplier.
   comboMul() {
     return 1 + Math.min(SCORE.comboMax - 1, this.combo * SCORE.comboStep);
   }
 
+  // --- banish: score the kill and drop the shade's motes.
   banish(shade, x, z) {
     this.combo = Math.min(SCORE.comboMax / SCORE.comboStep, this.combo + 1);
     this.comboClock = SCORE.comboWindow;
@@ -537,6 +556,7 @@ export class World {
     this.shake = Math.max(this.shake, 0.34);
   }
 
+  // --- tickSparks: gravity and drag for the spark particles.
   tickSparks(dt) {
     for (let i = this.sparks.length - 1; i >= 0; i -= 1) {
       const s = this.sparks[i];

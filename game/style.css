@@ -1,8 +1,9 @@
-/* style.css — hand-authored for this entry. */
+/* style.css — the page chrome: HUD panels, banner, and vignette that frame the canvas; layout and look only, no game logic. */
 /* Emberline — the page around the canvas. The HUD is drawn by the browser, not the game: text stays
    sharp, the fire pips are plain elements the game recolours, and the vignette is one gradient over
    everything so the diorama feels seen through a lens held close to a lantern. */
 
+/* --- design tokens and the base reset. --- */
 :root {
   --ink: #e8ddc8;
   --ink-dim: #b9ad93;
@@ -25,6 +26,7 @@ html, body {
   user-select: none;
 }
 
+/* --- the canvas host and the corner vignette that sells the lantern-lit frame. --- */
 #stage { position: fixed; inset: 0; }
 #stage canvas { display: block; width: 100%; height: 100%; }
 
@@ -53,6 +55,7 @@ html, body {
   gap: 12px;
 }
 
+/* --- the three HUD panels: fires, wick, and the night clock. --- */
 .panel {
   background: var(--panel);
   border: 1px solid rgba(143, 176, 200, 0.16);
@@ -76,6 +79,7 @@ html, body {
 #panel-wick { justify-self: center; width: min(340px, 40vw); }
 #panel-clock { justify-self: end; text-align: right; }
 
+/* --- fire pips: one bar per brazier, recoloured by the game. --- */
 #fire-pips { display: flex; gap: 8px; }
 .pip {
   position: relative;
@@ -100,6 +104,7 @@ html, body {
 .pip.out { border-color: rgba(143, 176, 200, 0.10); }
 .pip.out::before { width: 0; }
 
+/* --- wick meter: the keeper's fuel bar and its low/mid warning tones. --- */
 #wick-track {
   position: relative;
   height: 12px;
@@ -119,6 +124,7 @@ html, body {
 #wick-fill.mid { background: linear-gradient(90deg, #57462a, #7d6840); }
 #wick-fill.low { background: linear-gradient(90deg, #3a2e1c, #54432a); }
 
+/* --- night clock digits. --- */
 #clock-value {
   font-family: 'Trebuchet MS', Verdana, sans-serif;
   font-size: 22px;

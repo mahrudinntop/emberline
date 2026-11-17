@@ -1,4 +1,4 @@
-// main.js — hand-authored for this entry.
+// main.js — boot and the fixed-step game loop: wires renderer, world, grove and HUD together, owns no rules and no drawing of its own.
 /* Emberline — boot. One renderer, one scene, one world, one loop. The page is the grove: the canvas
    below, the HUD above, the banner between them. The world is stepped on a fixed tick so the rules
    run at the same speed on any machine, and the view interpolates the rest for itself. */
@@ -13,6 +13,7 @@ import { attachInput, input, consumeHurl } from './input.js';
 import { stageShot } from './shots.js';
 import { STEP } from './config.js';
 
+// --- boot: read the URL params, stand up the renderer, and construct the scene's world and grove.
 const params = new URLSearchParams(location.search);
 const seed = Number(params.get('seed') ?? 1) || 1;
 const shotName = params.get('shot');
@@ -36,6 +37,7 @@ grove.buildSparkPoints();
 const hud = new Hud();
 const sound = new Sound();
 
+// --- resize: keep the viewport aspect in step with the window.
 function resize() {
   const w = window.innerWidth;
   const h = window.innerHeight;
@@ -54,6 +56,7 @@ const aim = new THREE.Vector3();
 const raycaster = new THREE.Raycaster();
 const planeY = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
 
+// --- aimFromPointer: raycast the cursor back onto the ground plane to set the keeper's facing.
 function aimFromPointer(nx, ny) {
   raycaster.setFromCamera({ x: nx, y: ny }, grove.camera);
   const hit = new THREE.Vector3();
@@ -88,6 +91,7 @@ let acc = 0;
 let time = 0;
 let staged = false;
 
+// --- frame: the RAF loop — clamp dt, step the world on a fixed tick, then draw and poll for shot readiness.
 function frame(now) {
   const dt = Math.min(0.25, (now - last) / 1000);
   last = now;
@@ -143,6 +147,7 @@ function frame(now) {
 }
 requestAnimationFrame(frame);
 
+// --- the judge bridge: a read-only summary the screenshot tooling inspects after each draw.
 // The judge's tooling reads this: for ?shot= the render is deterministic, and this reports the
 // frame the game believes it drew, so a screenshot can be checked against the rules it came from.
 window.emberline = {
