@@ -69,8 +69,8 @@ export const VIEW = {
   // Camera yaw is fixed in WORLD space (no lookAt tilt), so a prop can be placed on the ground by
   // raycasting the very pixel it must cover: what the layout code measures is what the frame shows.
   yaw: (() => { const f = [0, 25.5, 30.0], t = [0, 0.4, 0.6]; return Math.atan2(f[0] - t[0], f[2] - t[2]); })(),
-  cameraFrom: [0, 25.5, 30.0],
-  cameraLook: [0, 0.4, 0.6],
+  cameraFrom: [0, 15.5, 19.5],
+  cameraLook: [0, 1.1, 2.2],
   sway: 0.30,
 };
 

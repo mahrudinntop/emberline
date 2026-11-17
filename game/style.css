@@ -111,12 +111,12 @@ html, body {
   position: absolute;
   inset: 0;
   width: 100%;
-  background: linear-gradient(90deg, #7ba9bf, #a8c6d6);
+  background: linear-gradient(90deg, #4a3c25, #6d5a38);
   border-radius: 5px;
   transition: width 0.12s linear;
 }
-#wick-fill.mid { background: linear-gradient(90deg, #c9d6e4, #e8f2fa); }
-#wick-fill.low { background: linear-gradient(90deg, #7d94ab, #a9bdd0); }
+#wick-fill.mid { background: linear-gradient(90deg, #57462a, #7d6840); }
+#wick-fill.low { background: linear-gradient(90deg, #3a2e1c, #54432a); }
 
 #clock-value {
   font-family: 'Trebuchet MS', Verdana, sans-serif;

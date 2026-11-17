@@ -22,21 +22,25 @@ export function stageShot(name, world) {
   }
 
   if (name === 'play') {
-    // Mid-fight, night one: fires part-drained, a wave in the open, the wick thinning. The pilot
-    // plays the real rules, so every prop in this frame is where the game genuinely put it.
+    // Mid-fight, night one. Sixty seconds is deliberately past the first wave: the hero frame has to
+    // show the two nouns of the pitch — the darkness, and the keeper standing in it.
     world.startNight();
-    play(world, 38);
+    play(world, 44);
     return { screen: world.phase === PHASE.OVER ? 'over' : 'play', world };
   }
 
-  // End: the fifth night. Play the real rules forward until the grove is actually lost — a staged
-  // 'over' screen must be a state the game can reach, not a painted caption.
+  // End: the grove is actually lost. A keeper that abandons the ring — stands still while every fire
+  // burns down — is a real losing line the player can reproduce, so 'over' is a state the game
+  // reached under its own rules, not a painted caption.
   world.startNight();
   let guard = 0;
-  while (world.phase !== PHASE.OVER && guard < 40) {
-    play(world, 60);
+  while (world.phase !== PHASE.OVER && guard < 240) {
+    for (let i = 0; i < 60 * 8; i += 1) {
+      world.step(1 / 60, { x: 0, z: 0, raise: false, pour: false }, true);
+      if (world.phase === PHASE.OVER) break;
+    }
     guard += 1;
-    if (world.phase === PHASE.DAWN) play(world, 4);
+    if (world.phase === PHASE.DAWN) play(world, 44);
   }
   return { screen: world.phase === PHASE.OVER ? 'over' : 'play', world };
 }

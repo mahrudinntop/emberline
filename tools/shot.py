@@ -25,7 +25,7 @@ with sync_playwright() as p:
     except Exception as e:
         errors.append(f"wait: {e}")
     time.sleep(0.6)
-    pg.screenshot(path=OUT)
+    pg.screenshot(path=OUT, timeout=90000)
     summary = pg.evaluate("window.emberline ? window.emberline.summary() : null")
     b.close()
 

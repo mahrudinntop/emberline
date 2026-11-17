@@ -22,7 +22,7 @@ renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.42;
+renderer.toneMappingExposure = 1.34;
 stage.appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
@@ -146,6 +146,7 @@ requestAnimationFrame(frame);
 // frame the game believes it drew, so a screenshot can be checked against the rules it came from.
 window.emberline = {
   world,
+  grove,
   seed,
   shot: shotName ?? null,
   phase: () => world.phase,
