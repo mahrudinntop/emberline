@@ -1,3 +1,4 @@
+// world.js — hand-authored for this entry.
 /* Emberline — the rules, and nothing about how they are drawn.
    The grove is a disc of dark. Five fires stand on a ring; each holds back the dark within its own
    radius while it has fuel, and each loses fuel every second it burns. The keeper carries one wick:

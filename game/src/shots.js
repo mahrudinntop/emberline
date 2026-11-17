@@ -1,3 +1,4 @@
+// shots.js — hand-authored for this entry.
 /* Emberline — the three screenshot scenes behind ?shot=start|play|end, built the way the starter's
    shots.js is built: a fresh world, its real rules played forward by the pilot for a fixed number
    of steps, then one more frame drawn. The same seed always gives the same frame, so a screenshot

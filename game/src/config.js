@@ -1,3 +1,4 @@
+// config.js — hand-authored for this entry.
 /* Emberline — every number the game balances with, in one place, so a tuning pass never has to
    chase a constant through the modules. Distances are world units (the grove is 26 in radius),
    times are seconds, fuel and wick are 0..100. */

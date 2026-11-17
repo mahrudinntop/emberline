@@ -1,3 +1,4 @@
+// audio.js — hand-authored for this entry.
 /* Emberline — sound, all of it made on the spot: no audio files, so the game still loads from its
    own directory with nothing fetched. A loop of filtered wind, a crackle bed under each lit fire,
    small struck tones for banishing, a low horn for the night, bells for the dawn, and a heartbeat

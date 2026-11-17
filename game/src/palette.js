@@ -1,3 +1,4 @@
+// palette.js — hand-authored for this entry.
 /* Emberline — the whole look is built from these numbers, so every surface keeps to one palette
    and the game reads as one diorama rather than a pile of defaults. Colours are laid out as
    value bands (deep, mid, near, glow) so a shape's role decides its brightness, not the order it

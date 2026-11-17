@@ -1,3 +1,4 @@
+// grove.js — hand-authored for this entry.
 /* Emberline — the diorama. One ground disc, a ring of pines, five braziers, and the light that
    comes out of them. Every surface is drawn from the palette's value bands; the ground texture is
    painted at boot on a canvas (so the game still loads from files alone) and carries the five faint

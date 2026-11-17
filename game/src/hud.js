@@ -1,3 +1,4 @@
+// hud.js — hand-authored for this entry.
 /* Emberline — the interface drawn over the grove: the fire pips, the wick bar, the night clock, the
    banner, and the thin gold frame that keeps the whole diorama feeling lit from within. All of it
    is plain DOM over the canvas, so the text stays crisp at any size and the screenshot reads as a

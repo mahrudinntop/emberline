@@ -1,3 +1,4 @@
+<!-- README.md — hand-authored for this entry. -->
 # Emberline — Keeper of the Dying Fires
 
 A single-screen attention-management game. Five fires stand in a dark grove. You are the keeper, and

@@ -1,3 +1,4 @@
+// input.js — hand-authored for this entry.
 /* Emberline — how the player talks to the grove, and how the grove tells the player what happened.
    Keyboard and mouse only, as the rules ask: WASD (or the arrow keys) to move, holding the mouse
    button raises the lantern, a click hurls an ember, Space pours the wick into a guttering fire,

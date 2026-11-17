@@ -1,3 +1,4 @@
+// random.js — hand-authored for this entry.
 /* Emberline — a small deterministic random source. The whole grove, every night's spawn order
    and every screenshot are built from this one seed, so ?seed=1 always shows the same game and a
    score can be compared with a score. */

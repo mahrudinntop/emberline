@@ -1,3 +1,4 @@
+// pilot.js — hand-authored for this entry.
 /* Emberline — a small deterministic pilot that plays the real rules forward, used only to stage the
    three screenshots. It reads the same world the player does and presses the same keys: walk to the
    fire that will gutter first, pour the wick while close, raise the lantern when a shade comes in,

@@ -1,3 +1,4 @@
+// main.js — hand-authored for this entry.
 /* Emberline — boot. One renderer, one scene, one world, one loop. The page is the grove: the canvas
    below, the HUD above, the banner between them. The world is stepped on a fixed tick so the rules
    run at the same speed on any machine, and the view interpolates the rest for itself. */
